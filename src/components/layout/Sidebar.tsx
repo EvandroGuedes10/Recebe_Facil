@@ -13,7 +13,7 @@ import {
   ShieldCheck,
   Settings,
   Upload,
-  LogOut,
+  RefreshCw,
   ChevronRight,
   PlusCircle,
 } from 'lucide-react';
@@ -264,10 +264,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
           <button
             onClick={onLogout}
-            title="Sair do Sistema"
-            className="p-1.5 rounded text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+            title="Atualizar Sessão (Acesso Livre sem Senha)"
+            className="p-1.5 rounded text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 transition-colors cursor-pointer"
           >
-            <LogOut className="w-4 h-4" />
+            <RefreshCw className="w-4 h-4" />
           </button>
         </div>
       </div>

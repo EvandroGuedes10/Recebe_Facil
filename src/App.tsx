@@ -3,7 +3,6 @@ import { Sidebar, TabType } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { ToastContainer, ToastMessage } from './components/common/Toast';
 import { ConfirmationModal } from './components/common/ConfirmationModal';
-import { LoginView } from './components/auth/LoginView';
 import { DashboardOverview } from './components/dashboard/DashboardOverview';
 
 // Modais NF-e Saída & Títulos a Receber
@@ -56,6 +55,16 @@ import {
 } from './types';
 import { api, setAuthSession, clearAuthSession } from './services/api';
 
+const DEFAULT_USUARIO: Usuario = {
+  id: 1,
+  empresa_id: 0,
+  nome: 'Evandro Guedes',
+  email: 'evandro@recebefacil.com.br',
+  perfil: 'ADMIN',
+  ativo: true,
+  criado_em: '2026-01-01T00:00:00.000Z',
+};
+
 export default function App() {
   // Theme state ('light' as default corporate ERP theme, with dark support)
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -77,9 +86,8 @@ export default function App() {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
 
-  // Authentication state
-  const [currentUser, setCurrentUser] = useState<Usuario | null>(null);
-  const [authChecking, setAuthChecking] = useState(true);
+  // Authentication state - Acesso livre direto sem senha
+  const [currentUser, setCurrentUser] = useState<Usuario>(DEFAULT_USUARIO);
 
   // App Navigation
   const [currentTab, setCurrentTab] = useState<TabType>('dashboard');
@@ -161,44 +169,19 @@ export default function App() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
-  // Check auth session on boot
+  // Boot direto sem necessidade de senha
   useEffect(() => {
-    const savedUser = localStorage.getItem('recebefacil_usuario');
-    if (savedUser) {
-      try {
-        const u = JSON.parse(savedUser);
-        setCurrentUser(u);
-        setAuthSession(u.id, u.nome);
-        if (u.empresa_id) {
-          setSelectedEmpresaId(u.empresa_id);
-        }
-      } catch {
-        localStorage.removeItem('recebefacil_usuario');
-      }
-    }
-    setAuthChecking(false);
+    setAuthSession(DEFAULT_USUARIO.id, DEFAULT_USUARIO.nome);
   }, []);
-
-  const handleLoginSuccess = (usuario: Usuario) => {
-    setCurrentUser(usuario);
-    setAuthSession(usuario.id, usuario.nome);
-    localStorage.setItem('recebefacil_usuario', JSON.stringify(usuario));
-    if (usuario.empresa_id) {
-      setSelectedEmpresaId(usuario.empresa_id);
-    }
-    setCurrentTab('dashboard');
-    addToast('success', `Acesso autorizado para ${usuario.nome}.`, 'Sessão Iniciada');
-    loadInitialData(usuario.empresa_id || selectedEmpresaId);
-  };
 
   const handleLogout = async () => {
     try {
       await api.auth.logout();
     } catch {}
-    clearAuthSession();
-    localStorage.removeItem('recebefacil_usuario');
-    setCurrentUser(null);
-    addToast('info', 'Você saiu do sistema com segurança.', 'Sessão Finalizada');
+    setAuthSession(DEFAULT_USUARIO.id, DEFAULT_USUARIO.nome);
+    setCurrentUser(DEFAULT_USUARIO);
+    addToast('info', 'Sessão atualizada. O acesso permanece liberado sem necessidade de senha.', 'Acesso Livre');
+    loadInitialData(selectedEmpresaId);
   };
 
   // Data fetching functions
@@ -428,24 +411,6 @@ export default function App() {
     setNovoLancamentoTipoPadrao(tipo || 'RECEBER');
     setIsNovoLancamentoModalOpen(true);
   };
-
-  if (authChecking) {
-    return (
-      <div className="min-h-screen bg-[#F5F7FA] dark:bg-gray-950 flex items-center justify-center">
-        <div className="w-8 h-8 border-3 border-[#2563EB] border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  // If unauthenticated, show TELA LOGIN
-  if (!currentUser) {
-    return (
-      <>
-        <LoginView onLoginSuccess={handleLoginSuccess} />
-        <ToastContainer toasts={toasts} onDismiss={removeToast} />
-      </>
-    );
-  }
 
   const pendentesReceberCount = (parcelasReceber || []).filter((p) => p.status === 'pendente' || p.status === 'vencido').length;
   const pendentesPagarCount = (contasPagar || []).filter((cp) => cp.status === 'PENDENTE' || cp.status === 'ATRASADO').length;
